@@ -1,0 +1,91 @@
+branches:
+  only:
+  - master
+notifications:
+  email:
+  - nikhils1.ttl@tatamotors.com
+
+language: android
+sudo: required
+jdk: oraclejdk8
+
+matrix:
+  include:
+  - os: linux
+    sudo: false
+
+#env set
+env:
+  global:
+  - ANDROID_API_LEVEL=28
+  - ANDROID_BUILD_TOOLS_VERSION=3.3.1
+  - ANDROID_ABI=armeabi-v7a
+
+android:
+  components:
+  - tools
+  - platform-tools
+  - tools
+  - extra-android-m2repository
+  - android-28
+  - android-21
+  - sys-img-armeabi-v7a-android-28
+  - sys-img-armeabi-v7a-android-21
+
+  licenses:
+  - 'android-sdk-preview-license-52d11cd2'
+  - 'android-sdk-license-.+'
+  - 'google-gdk-license-.+'
+
+# Emulator Management: Create, Start and Wait
+before_script:
+- chmod +x gradlew
+#- echo no | android create avd --force -n test -t android-21 --abi armeabi-v7a
+#- emulator -avd test -no-audio -no-window &
+#- android-wait-for-emulator
+#- adb shell input keyevent 82 &
+script: df -h
+before_install:
+- touch $HOME/.android/repositories.cfg
+- yes | sdkmanager "platforms;android-28"
+- yes | sdkmanager "build-tools;28.0.3"
+- export TRAVIS_TAG=$(git tag --points-at HEAD)
+- mkdir -p $ANDROID_HOME/licenses || true
+
+before_cache:
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+
+cache:
+  directories:
+  - $HOME/.gradle/caches/
+  - $HOME/.gradle/wrapper/
+  - $HOME/.android/build-cache
+
+before_deploy:
+#- cp $TRAVIS_BUILD_DIR/tmcareapp.jks $HOME
+- cd app/build/outputs/apk/
+- ls -R .
+#- jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/tmcareapp.jks -storepass "audetemi" -keypass "audetemi" app-sandbox-release-unsigned "tm care app"
+# Verification
+#- jarsigner -verify app-sandbox-release-unsigned.apk
+#- ${ANDROID_HOME}/build-tools/28.0.3/zipalign -v 4 app-sandbox-release-unsigned TMSCCVTravis.apk
+
+deploy:
+provider: releases
+  file:
+
+  - "/home/travis/build/tatamotors/Sample/app/build/outputs/apk/sandbox/debug/app-sandbox-debug.apk"
+  - "/home/travis/build/tatamotors/Sample/app/build/outputs/apk/sandbox/release/app-sandbox-release-unsigned.apk"
+
+    #- "/home/travis/build/tatamotors/Sample/app/build/outputs/apk/TMSCCVTravis.apk"
+    #- "/home/travis/build/tatamotors/Sample/app/build/outputs/apk/app-sandbox-release-unsigned.apk"
+
+    file_glob: true
+    skip_cleanup: true
+      # api_key:
+    #secure: sqGHzm3sUKZC2QiuQNhZ4l8SNLIVuzgpggIAe+pxgBXZXetqxJ14B2yfgPaX1b0vHLUhctuT/fVs0wof1To/c3NBFIBORt/Z9pA0k/1OdI5JGnd/F2QAgOEW8n1me999tc4gqVAoyXrpkwXb5Uinrm2zj/PowZS4Ja6jz2Qs3Vv9Ttw5cbAyULjHZxNyNeDLpqBlJVTnr4fdu/QHzcH7w3mr0GzwVCAnkaraIo3TjPXnZqvOCUGHCntfyjNCLZHhfQTb6xBcgjejKE3L864w5uzt9ItR2dfVXYnCL3rxqfZfcUjMJlAMhbCUNUjYydF4K6evHFaEYCR27Me4NbPBFKiVn5N1mbdmPMbucifnWOxY8PRGCZLENlO2ZsMHQm0x2RdBlQUUVjwXdXxr8m1wwH1MDDY5RjCzH/CZ2PLalU+sH6Ya9lYpaBJxqUERWsmUbRvq+vA4USrgzX8wML8ykUhHYbq/AOEV7D0EJWTpuG+6r55VF4hEytUa+pnzRSxxt6gYilbQq2jwpGj+gFGhqm8A5L5r//R7kLupeA0h4YT87m2VCZEEg69jh/8i1iMkoy5zFrKTjZk20WeapKF1kZ5AFwxKsVsocFUi5CQx26DCppETez7m+8ezYR+WIyxv+sUC6SGEI29YM1PFLR4Dj16C6jzRpvAK42bOdtaq/c8=
+    on:
+      repo: nikhil-tml/Sample
+      tags: false
+      all_branches: true
